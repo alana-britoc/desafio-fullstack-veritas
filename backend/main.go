@@ -8,12 +8,13 @@ import (
 )
 
 func main() {
+	taskMutex.Lock()
 	if err := loadTasksFromFile(); err != nil {
-		log.Fatalf("Falha ao carregar tarefas do arquivo: %v", err)
+		log.Printf("Aviso: Falha ao carregar tarefas, mas o servidor vai iniciar: %v", err)
 	}
+	taskMutex.Unlock()
 
 	mux := http.NewServeMux()
-
 	mux.HandleFunc("/tasks", taskRoutes)
 	mux.HandleFunc("/tasks/", taskByIDHandler)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +29,7 @@ func main() {
 
 	handler := c.Handler(mux)
 
-	log.Println("Servidor Go rodando na porta :8080 (com CORS habilitado para localhost:3000/5173)")
+	log.Println("Servidor Go rodando na porta :8080 (com CORS e lock corrigido)")
 
 	if err := http.ListenAndServe(":8080", handler); err != nil {
 		log.Fatal(err)
