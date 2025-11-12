@@ -1,0 +1,30 @@
+### Teste 1: Criar uma tarefa (POST)
+POST http://localhost:8080/tasks
+Content-Type: application/json
+
+{
+  "title": "Minha Tarefa para Testar",
+  "description": "Vou atualizar e deletar essa",
+  "status": "A Fazer"
+}
+
+### Copie o ID da resposta acima e cole na URL abaixo ###
+
+### Teste 3: Atualizar a tarefa (PUT)
+PUT http://localhost:8080/tasks/COLE_O_ID_AQUI
+Content-Type: application/json
+
+{
+  "title": "Minha Tarefa ATUALIZADA",
+  "description": "Agora está em progresso",
+  "status": "Em Progresso"
+}
+
+### Teste 4: Buscar a tarefa atualizada (GET by ID)
+GET http://localhost:8080/tasks/COLE_O_ID_AQUI
+
+### Teste 5: Deletar a tarefa (DELETE)
+DELETE http://localhost:8080/tasks/COLE_O_ID_AQUI
+
+### Teste 6: Listar tudo (deve estar vazio ou sem a tarefa deletada)
+GET http://localhost:8080/tasks
