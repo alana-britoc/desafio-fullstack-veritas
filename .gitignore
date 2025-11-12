@@ -1,0 +1,7 @@
+# Frontend (Node)
+node_modules/
+dist/
+.env
+
+# Backend (Go)
+tasks.json
