@@ -23,24 +23,20 @@ function App() {
   const [activeTask, setActiveTask] = useState(null);
   const [modalTask, setModalTask] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeColumn, setActiveColumn] = useState(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  // Busca tarefas do backend
   const fetchTasks = async () => {
     try {
       const response = await getTasks();
       setTasks(response.data || []);
     } catch (error) {
-      console.error("Falha ao buscar tarefas:", error);
+      console.error('Falha ao buscar tarefas:', error);
     }
   };
 
@@ -50,53 +46,58 @@ function App() {
 
   const handleAddTask = async (taskData) => {
     try {
-      const response = await createTask(taskData);
-      setTasks([...tasks, response.data]);
-      setActiveColumn(null);
+      const response = await createTask({
+        ...taskData,
+        status: activeColumn || 'A Fazer',
+      });
+      setTasks((prev) => [...prev, response.data]);
+      setActiveColumn(null); // fecha o formulário
     } catch (error) {
-      console.error("Falha ao criar tarefa:", error);
+      console.error('Falha ao criar tarefa:', error);
     }
   };
 
   const handleUpdateTask = async (taskId, taskData) => {
     try {
       const response = await updateTask(taskId, taskData);
-      setTasks(prevTasks => 
-        prevTasks.map(task => 
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
           task.id === taskId ? response.data : task
         )
       );
       setModalTask(null);
     } catch (error) {
-      console.error("Falha ao atualizar tarefa:", error);
+      console.error('Falha ao atualizar tarefa:', error);
     }
   };
 
   const handleDeleteTask = async (taskId) => {
     try {
       await deleteTask(taskId);
-      setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+      setTasks((prev) => prev.filter((task) => task.id !== taskId));
     } catch (error) {
-      console.error("Falha ao deletar tarefa:", error);
+      console.error('Falha ao deletar tarefa:', error);
     }
   };
-  
+
   const handleStartEdit = (task) => {
     setModalTask(task);
   };
 
-  const filteredTasks = tasks.filter(task => 
-    task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredTasks = tasks.filter(
+    (task) =>
+      task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (task.description &&
+        task.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const getTasksByStatus = (status) => {
-    return filteredTasks.filter(task => task.status === status);
+    return filteredTasks.filter((task) => task.status === status);
   };
 
   const handleDragStart = (event) => {
     const { active } = event;
-    const task = tasks.find(t => t.id === active.id);
+    const task = tasks.find((t) => t.id === active.id);
     setActiveTask(task);
   };
 
@@ -104,32 +105,36 @@ function App() {
     setActiveTask(null);
     const { active, over } = event;
     if (!over) return;
-    const activeTask = tasks.find(t => t.id === active.id);
-    if (!activeTask) return;
-    const oldStatus = activeTask.status;
+
+    const task = tasks.find((t) => t.id === active.id);
+    if (!task) return;
+
+    const oldStatus = task.status;
     let newStatus = null;
+
     if (columns.includes(over.id)) {
       newStatus = over.id;
     } else {
-      const overTask = tasks.find(t => t.id === over.id);
-      if (overTask) {
-        newStatus = overTask.status;
-      }
+      const overTask = tasks.find((t) => t.id === over.id);
+      if (overTask) newStatus = overTask.status;
     }
+
     if (!newStatus || newStatus === oldStatus) return;
-    setTasks(prevTasks =>
-      prevTasks.map(task =>
-        task.id === activeTask.id ? { ...task, status: newStatus } : task
+
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === task.id ? { ...t, status: newStatus } : t
       )
     );
-    const taskToUpdate = { ...activeTask, status: newStatus };
+
     try {
-      await updateTask(activeTask.id, taskToUpdate);
+      await updateTask(task.id, { ...task, status: newStatus });
     } catch (error) {
-      console.error("Falha ao atualizar tarefa:", error);
-      setTasks(prevTasks =>
-        prevTasks.map(task =>
-          task.id === activeTask.id ? { ...task, status: oldStatus } : task
+      console.error('Falha ao atualizar tarefa:', error);
+      // rollback
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === task.id ? { ...t, status: oldStatus } : t
         )
       );
     }
@@ -149,11 +154,11 @@ function App() {
             <div className="header-controls">
               <div className="search-bar">
                 <HiOutlineSearch size={18} />
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="Buscar tarefas..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)} 
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
             </div>
@@ -161,7 +166,7 @@ function App() {
 
           <main className="app-container">
             <div className="kanban-board">
-              {columns.map(status => (
+              {columns.map((status) => (
                 <KanbanColumn
                   key={status}
                   title={status}
@@ -177,10 +182,10 @@ function App() {
           </main>
         </div>
 
-        <DragOverlay className="drag-overlay">
+        <DragOverlay>
           {activeTask ? <TaskCard task={activeTask} /> : null}
         </DragOverlay>
-        
+
         {modalTask && (
           <TaskModal
             task={modalTask}

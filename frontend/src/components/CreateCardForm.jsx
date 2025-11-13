@@ -26,7 +26,7 @@ function CreateCardForm({ onSave, onCancel }) {
       <textarea
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-        placeholder="Descrição (opcional)..."
+        placeholder="Descrição"
         className="task-desc-input"
       />
       <div className="new-task-buttons">

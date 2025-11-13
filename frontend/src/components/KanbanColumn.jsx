@@ -1,45 +1,75 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useDroppable } from '@dnd-kit/core';
-import TaskCard from './TaskCard';
-import CreateCardForm from './CreateCardForm';
+import TaskCard from './TaskCard'; 
+import CreateCardForm from './CreateCardForm'; 
 import { IoMdAdd } from 'react-icons/io';
 
-function KanbanColumn({ title, tasks, onSaveTask, onEditTask, onDeleteTask, activeColumn, setActiveColumn }) {
+function KanbanColumn({
+  title,
+  tasks,
+  onSaveTask,
+  onEditTask,
+  onDeleteTask,
+  activeColumn,
+  setActiveColumn,
+}) {
   const { setNodeRef } = useDroppable({ id: title });
   const showForm = activeColumn === title;
+  const columnRef = useRef(null);
 
-  const handleSave = (taskData) => {
-    onSaveTask({ ...taskData, status: title });
+  const handleSave = async (taskData) => {
+    await onSaveTask({ ...taskData, status: title });
     setActiveColumn(null);
   };
 
-  const handleOpenForm = () => {
-    if (activeColumn === title) {
-      setActiveColumn(null);
-    } else {
-      setActiveColumn(title);
-    }
+  const handleOpenForm = (e) => {
+    e.stopPropagation();
+    setActiveColumn((prev) => (prev === title ? null : title));
   };
 
   useEffect(() => {
-    // Fecha o form se clicar fora
     const handleClickOutside = (e) => {
-      if (!e.target.closest('.kanban-column')) {
+      if (columnRef.current && !columnRef.current.contains(e.target)) {
         setActiveColumn(null);
       }
     };
-    document.addEventListener('click', handleClickOutside);
+
+    if (showForm) {
+      document.addEventListener('click', handleClickOutside);
+    }
+
     return () => document.removeEventListener('click', handleClickOutside);
-  }, [setActiveColumn]);
+  }, [showForm, setActiveColumn]);
+
+  const combinedRef = (node) => {
+    setNodeRef(node);
+    columnRef.current = node;
+  };
 
   return (
-    <div ref={setNodeRef} className="kanban-column" data-status={title}>
-      <h3>{title}</h3>
+    <div
+      ref={combinedRef} 
+      className="kanban-column"
+      data-status={title}
+    >
+      {/* O <h3> é estilizado automaticamente 
+        pelo seletor .kanban-column h3 no seu CSS 
+      */}
+      <h3>
+        {title}
+      </h3>
 
-      <SortableContext id={title} items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+      <SortableContext
+        id={title}
+        items={tasks.map((t) => t.id)}
+        strategy={verticalListSortingStrategy}
+      >
+        {/* A classe .column-body do seu CSS já 
+          cuida do scroll (overflow-y: auto) 
+        */}
         <div className="column-body">
-          {tasks.map(task => (
+          {tasks.map((task) => (
             <TaskCard
               key={task.id}
               task={task}
@@ -50,6 +80,7 @@ function KanbanColumn({ title, tasks, onSaveTask, onEditTask, onDeleteTask, acti
         </div>
       </SortableContext>
 
+      {/* A classe .column-footer do seu CSS */}
       <div className="column-footer">
         {showForm ? (
           <CreateCardForm
@@ -57,8 +88,11 @@ function KanbanColumn({ title, tasks, onSaveTask, onEditTask, onDeleteTask, acti
             onCancel={() => setActiveColumn(null)}
           />
         ) : (
-          <button onClick={handleOpenForm} className="add-card-btn">
-            <IoMdAdd size={18} />
+          <button
+            onClick={handleOpenForm}
+            className="add-card-btn"
+          >
+            <IoMdAdd size={16} />
             Adicionar Tarefa
           </button>
         )}
