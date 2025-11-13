@@ -14,14 +14,12 @@ import (
 
 var (
 	taskStore     = make(map[string]Task)
-	taskMutex     = &sync.Mutex{}
-	tasksJSONFile = "tasks.json" // O nome do nosso "banco de dados"
+	taskMutex     = &sync.Mutex{} // A ÚNICA TRANCA
+	tasksJSONFile = "tasks.json"
 )
 
 func loadTasksFromFile() error {
-	taskMutex.Lock()
-	defer taskMutex.Unlock()
-
+	// A tranca é gerenciada por quem chama essa função (o main)
 	file, err := os.Open(tasksJSONFile)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -46,7 +44,10 @@ func loadTasksFromFile() error {
 
 	err = json.Unmarshal(bytes, &taskStore)
 	if err != nil {
-		return err
+		log.Println("ERRO: Falha ao decodificar tasks.json. Arquivo pode estar corrompido.", err)
+		log.Println("Iniciando com store vazio para evitar crash.")
+		taskStore = make(map[string]Task)
+		return nil // Retorna nil para não travar o servidor
 	}
 
 	log.Printf("Carregadas %d tarefas do arquivo tasks.json", len(taskStore))
@@ -54,9 +55,6 @@ func loadTasksFromFile() error {
 }
 
 func saveTasksToFile() error {
-	taskMutex.Lock()
-	defer taskMutex.Unlock()
-
 	bytes, err := json.MarshalIndent(taskStore, "", "  ")
 	if err != nil {
 		return err
@@ -141,6 +139,9 @@ func createTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	task.ID = uuid.NewString()
 
+	taskMutex.Lock()
+	defer taskMutex.Unlock()
+
 	taskStore[task.ID] = task
 
 	if err := saveTasksToFile(); err != nil {
@@ -154,15 +155,6 @@ func createTaskHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func updateTaskHandler(w http.ResponseWriter, r *http.Request, id string) {
-	taskMutex.Lock()
-	defer taskMutex.Unlock()
-
-	_, ok := taskStore[id]
-	if !ok {
-		http.Error(w, "Tarefa não encontrada", http.StatusNotFound)
-		return
-	}
-
 	var updatedTask Task
 	err := json.NewDecoder(r.Body).Decode(&updatedTask)
 	if err != nil {
@@ -172,6 +164,15 @@ func updateTaskHandler(w http.ResponseWriter, r *http.Request, id string) {
 
 	if err := updatedTask.Validate(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	taskMutex.Lock()
+	defer taskMutex.Unlock()
+
+	_, ok := taskStore[id]
+	if !ok {
+		http.Error(w, "Tarefa não encontrada", http.StatusNotFound)
 		return
 	}
 
