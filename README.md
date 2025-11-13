@@ -242,16 +242,6 @@ Funcionalidades que seriam implementadas em uma versão de produção:
 
 ---
 
-## 7. Informações do Desenvolvedor
-
-**Repositório:** [github.com/seu-usuario/desafio-fullstack-veritas](https://github.com/seu-usuario/desafio-fullstack-veritas)
-
-**Data de Entrega:** Novembro de 2025
-
-**Empresa:** Veritas Consultoria Empresarial
-
----
-
-## 8. Licença
+## 7. Licença
 
 Este projeto foi desenvolvido exclusivamente para fins de avaliação técnica e não possui licença de uso comercial.
